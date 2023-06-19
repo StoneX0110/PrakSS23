@@ -1,42 +1,37 @@
-import os.path
 import argparse
-
-from flask import Flask, render_template
-from flask import request
-import paho.mqtt.publish as mqtt_publish
 import time
 
-app = Flask(__name__, template_folder=os.path.normpath('templates'))
+import paho.mqtt.publish as mqtt_publish
+from flask import Flask
+from flask import request
+
+app = Flask(__name__)
 
 mqtt_broker = ''
 mqtt_port = 0
-mqtt_topic = 'cmnd/tasmota/Power'
 
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
-@app.route('/on', methods=['GET'])
-def switch_on():
+@app.route('/on/<device>', methods=['GET'])
+def switch_on(device):
+    mqtt_topic = f'cmnd/{device}/Power'
     mqtt_publish.single(mqtt_topic, payload='ON', hostname=mqtt_broker, port=mqtt_port)
-    return index()
+    return "Switched ON"
 
 
-@app.route('/off', methods=['GET'])
-def switch_off():
+@app.route('/off/<device>', methods=['GET'])
+def switch_off(device):
+    mqtt_topic = f'cmnd/{device}/Power'
     mqtt_publish.single(mqtt_topic, payload='OFF', hostname=mqtt_broker, port=mqtt_port)
-    return index()
+    return "Switched OFF"
 
 
-@app.route('/run', methods=['POST'])
-def turn_on_timed():
+@app.route('/run/<device>', methods=['GET'])
+def switch_on_for_duration(device):
     seconds = int(request.args.get('seconds'))
-    switch_on()
+    switch_on(device)
     time.sleep(seconds)
-    switch_off()
-    return index()
+    switch_off(device)
+    return f"Ran for {seconds} seconds, then turned OFF"
 
 
 if __name__ == '__main__':
