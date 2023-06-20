@@ -5,8 +5,8 @@ import time
 import asyncio
 
 import paho.mqtt.publish as mqtt_publish
-from flask import Flask
-from flask import request
+import requests
+from flask import Flask, Response, request
 
 app = Flask(__name__)
 
@@ -16,7 +16,7 @@ mqtt_port = 0
 
 @app.route('/<device>/state', methods=['GET'])
 def get_state(device):
-    #TODO
+    # TODO
     mqtt_topic = f'???/{device}/???'
     mqtt_publish.single(mqtt_topic, payload='???', hostname=mqtt_broker, port=mqtt_port)
     return f"Ran for {seconds} seconds, then turned OFF"
@@ -47,25 +47,30 @@ def run(device):
 
 @app.route('/<device>/wait', methods=['PUT'])
 def wait(device):
-    seconds = int(request.args.get('seconds'))
-    thread = threading.Thread(target=_run_async_task, args=(seconds, device))
+    seconds = int(request.form.get('seconds'))
+    callback_url = request.headers.get('Cpee-Callback')
+    thread = threading.Thread(target=_run_async_task, args=(callback_url, device, seconds))
     thread.start()
+
     print("Returning wait")
-    return f"Started running for {seconds} seconds..."
+    response = Response(f"Started running for {seconds} seconds...")
+    response.headers["CPEE-CALLBACK"] = "true"
+    return response
 
 
-def _run_async_task(seconds, device):
+def _run_async_task(callback_url, device, seconds):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(_switch_on_for_duration(seconds, device))
+    loop.run_until_complete(_switch_on_for_duration(callback_url, device, seconds))
     loop.close()
 
 
-async def _switch_on_for_duration(seconds, device):
+async def _switch_on_for_duration(callback_url, device, seconds):
     switch_on(device)
     await asyncio.sleep(seconds)
     switch_off(device)
-    return f"Ran for {seconds} seconds, then turned OFF"
+    requests.put(callback_url, f"Ran for {seconds} seconds, then turned OFF")
+    print("Returning async")
 
 
 if __name__ == '__main__':
