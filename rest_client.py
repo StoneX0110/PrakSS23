@@ -2,12 +2,12 @@
 import argparse
 import threading
 import time
-import asyncio
 
-import paho.mqtt.publish as mqtt_publish
+import daemon
 import paho.mqtt.client as mqtt_client
+import paho.mqtt.publish as mqtt_publish
 import requests
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request
 
 app = Flask(__name__)
 
@@ -102,9 +102,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("mqtt_ip", type=str, help="IP of MQTT broker")
     parser.add_argument("mqtt_port", type=int, help="Port of MQTT broker")
+    parser.add_argument('-d', '--daemon', action='store_true', help="Run the application as a daemon")
     args = parser.parse_args()
 
     mqtt_broker = args.mqtt_ip
     mqtt_port = args.mqtt_port
 
-    app.run(host='0.0.0.0', port=5000)
+    if args.daemon:
+        with daemon.DaemonContext():
+            app.run(host='0.0.0.0', port=5000)
+    else:
+        app.run(host='0.0.0.0', port=5000)
+
