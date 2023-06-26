@@ -14,20 +14,25 @@ app = Flask(__name__)
 mqtt_broker = ''
 mqtt_port = 0
 
+result = ""
+result_received = threading.Event()
+
+
+def _on_message(client, userdata, message):
+    global result
+    result = message.payload.decode()
+    result_received.set()
+
 
 @app.route('/<device>/state', methods=['GET'])
 def get_state(device):
-    result = ""
-    result_received = threading.Event()
+    global result, result_received
 
-    def on_message(client, userdata, message):
-        global result
-        print("Antwortnachricht erhalten: " + message.payload.decode())
-        result = message.payload.decode()
-        result_received.set()
+    result = ""
+    result_received.clear()
 
     client = mqtt_client.Client()
-    client.on_message = on_message
+    client.on_message = _on_message
     client.connect(mqtt_broker, mqtt_port)
 
     topic_subscribe = f"stat/{device}/POWER"
@@ -41,7 +46,6 @@ def get_state(device):
 
     client.loop_stop()
     client.disconnect()
-
     return result
 
 
