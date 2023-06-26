@@ -7,7 +7,7 @@ import asyncio
 import paho.mqtt.publish as mqtt_publish
 import paho.mqtt.client as mqtt_client
 import requests
-from flask import Flask, Response, request
+from flask import Flask, Response, request, jsonify
 
 app = Flask(__name__)
 
@@ -65,39 +65,37 @@ def switch_off(device):
 
 @app.route('/<device>/run', methods=['PUT'])
 def run(device):
-    seconds = int(request.args.get('seconds'))
-    switch_on(device)
-    time.sleep(seconds)
-    switch_off(device)
-    return f"Ran for {seconds} seconds, then turned OFF"
+    seconds = int(request.form.get('seconds'))
+    if seconds > 60:
+        return Response("The device is not allowed to run longer than 60 seconds.", status=400)
+
+    thread = threading.Thread(target=_switch_on_for_duration, args=(device, seconds))
+    thread.start()
+
+    return f"Running {device} for {seconds} seconds."
 
 
 @app.route('/<device>/wait', methods=['PUT'])
 def wait(device):
     seconds = int(request.form.get('seconds'))
+    if seconds > 60:
+        return Response("The device is not allowed to run longer than 60 seconds.", status=400)
+
     callback_url = request.headers.get('Cpee-Callback')
-    thread = threading.Thread(target=_run_async_task, args=(callback_url, device, seconds))
+    thread = threading.Thread(target=_switch_on_for_duration, args=(device, seconds, callback_url))
     thread.start()
 
-    print("Returning wait")
-    response = Response(f"Started running for {seconds} seconds...")
+    response = Response( f"Running {device} for {seconds} seconds.")
     response.headers["CPEE-CALLBACK"] = "true"
     return response
 
 
-def _run_async_task(callback_url, device, seconds):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(_switch_on_for_duration(callback_url, device, seconds))
-    loop.close()
-
-
-async def _switch_on_for_duration(callback_url, device, seconds):
+def _switch_on_for_duration(device, seconds, callback_url=None):
     switch_on(device)
-    await asyncio.sleep(seconds)
+    time.sleep(seconds)
     switch_off(device)
-    requests.put(callback_url, f"Ran for {seconds} seconds, then turned OFF")
-    print("Returning async")
+    if callback_url:
+        requests.put(callback_url, f"Ran {device} for {seconds} seconds.")
 
 
 if __name__ == '__main__':
