@@ -5,6 +5,7 @@ import time
 import asyncio
 
 import paho.mqtt.publish as mqtt_publish
+import paho.mqtt.client as mqtt_client
 import requests
 from flask import Flask, Response, request
 
@@ -16,10 +17,32 @@ mqtt_port = 0
 
 @app.route('/<device>/state', methods=['GET'])
 def get_state(device):
-    # TODO
-    mqtt_topic = f'???/{device}/???'
-    mqtt_publish.single(mqtt_topic, payload='???', hostname=mqtt_broker, port=mqtt_port)
-    return f"Ran for {seconds} seconds, then turned OFF"
+    result = ""
+    result_received = threading.Event()
+
+    def on_message(client, userdata, message):
+        global result
+        print("Antwortnachricht erhalten: " + message.payload.decode())
+        result = message.payload.decode()
+        result_received.set()
+
+    client = mqtt_client.Client()
+    client.on_message = on_message
+    client.connect(mqtt_broker, mqtt_port)
+
+    topic_subscribe = f"stat/{device}/POWER"
+    client.subscribe(topic_subscribe)
+    client.loop_start()
+
+    topic_publish = f'cmnd/{device}/Power'
+    client.publish(topic_publish)
+
+    result_received.wait(timeout=5)
+
+    client.loop_stop()
+    client.disconnect()
+
+    return result
 
 
 @app.route('/<device>/on', methods=['PUT'])
