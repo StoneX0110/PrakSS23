@@ -11,7 +11,7 @@ For this, we first needed to upgrade the Delock device to the latest Tasmota fir
 
 We then configured the remote switch for the mixer as follows:
 - it connects to our MQTT broker on 131.159.6.111:1883
-- it is accesible via the topic `cmnd/mixer/<command>`
+- it is accessible via the topic `cmnd/mixer/<command>`
 
 ## REST Service
 ### Installation

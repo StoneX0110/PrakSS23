@@ -35,10 +35,12 @@ def get_state(device):
     client.on_message = _on_message
     client.connect(mqtt_broker, mqtt_port)
 
+    # Tasmota devices publish their power status on this topic
     topic_subscribe = f"stat/{device}/POWER"
     client.subscribe(topic_subscribe)
     client.loop_start()
 
+    # A publish on this topic without any payload triggers a status update / status publish from the device
     topic_publish = f'cmnd/{device}/Power'
     client.publish(topic_publish)
 
@@ -69,6 +71,7 @@ def run(device):
     if seconds > 60:
         return Response("The device is not allowed to run longer than 60 seconds.", status=400)
 
+    # This starts a separate thread running the mixer, meanwhile a response is instantly returned to the caller.
     thread = threading.Thread(target=_switch_on_for_duration, args=(device, seconds))
     thread.start()
 
@@ -82,11 +85,13 @@ def wait(device):
         return Response("The device is not allowed to run longer than 60 seconds.", status=400)
 
     callback_url = request.headers.get('Cpee-Callback')
+    # This starts a separate thread running the mixer, meanwhile a response is instantly returned to the caller.
     thread = threading.Thread(target=_switch_on_for_duration, args=(device, seconds, callback_url))
     thread.start()
 
-    response = Response( f"Running {device} for {seconds} seconds.")
-    response.headers["CPEE-CALLBACK"] = "true"
+    response = Response(f"Running {device} for {seconds} seconds.")
+    response.headers[
+        "CPEE-CALLBACK"] = "true"  # This tells a CPEE process to await a response returned to its callback URL
     return response
 
 
@@ -113,4 +118,3 @@ if __name__ == '__main__':
             app.run(host='0.0.0.0', port=5000)
     else:
         app.run(host='0.0.0.0', port=5000)
-
