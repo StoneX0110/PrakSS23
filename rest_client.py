@@ -135,7 +135,7 @@ def _switch_on_for_duration(device, seconds, callback_url=None):
     time.sleep(seconds)
     switch_off(device)
     if callback_url:
-        requests.put(callback_url, jsonify(consumptions))
+        requests.put(callback_url, json.dumps(consumptions))
 
 
 if __name__ == '__main__':
