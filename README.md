@@ -41,9 +41,16 @@ The REST service provides access to the following endpoints:
 - PUT `/<device>/on`: Turns on the device.
 - PUT `/<device>/off`: Turns off the device.
 - PUT `/<device>/run`: Turns on the device for a specified duration.
-Requires a JSON body with a *seconds* parameter indicating the number of seconds the device should run.
-The device should not run for more than 60 seconds.
-- PUT `/<device>/wait`: Same as `/<device>/run`, but synchronous, meaning that a CPEE process will wait for the device to complete the run-time before going on with the process.
+  - Requires a JSON body with the following parameters:
+      - *seconds* (int), indicating the number of seconds the device should run.
+      The device should not run for more than 60 seconds.  The device should not run for more than 60 seconds.
+- PUT `/<device>/wait`: Turns on the device for a specified duration. Is synchronous, meaning that a CPEE process will wait for the device to complete the run-time before going on with the process.
+  Measures power consumption in specified intervals during run-time.
+  - Requires a JSON body with the following parameters:
+    - *seconds* (int), indicating the number of seconds the device should run.
+    The device should not run for more than 60 seconds.
+    - *interval* (float), indicating the polling interval for the power consumption.
   - The application first returns a response with the header `CPEE-CALLBACK = true`. This tells the CPEE process to wait until a final result is returned to its callback-URL by the application.
+  - The final result returned to the callback-URL is a list of the power consumption measurements.
 
 We configured the application to be able to control multiple devices, thus `<device>` represents the name of the remote switch to be accessed, in our case 'mixer'.
