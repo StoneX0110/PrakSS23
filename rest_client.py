@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import json
 import threading
 import time
 
@@ -17,8 +18,10 @@ mqtt_port = 0
 result = ""
 result_received = threading.Event()
 
+consumptions = []
 
-def _on_message(client, userdata, message):
+
+def _read_switch_state(client, userdata, message):
     global result
     result = message.payload.decode()
     result_received.set()
@@ -32,7 +35,7 @@ def get_state(device):
     result_received.clear()
 
     client = mqtt_client.Client()
-    client.on_message = _on_message
+    client.on_message = _read_switch_state
     client.connect(mqtt_broker, mqtt_port)
 
     # Tasmota devices publish their power status on this topic
@@ -40,10 +43,11 @@ def get_state(device):
     client.subscribe(topic_subscribe)
     client.loop_start()
 
-    # A publish on this topic without any payload triggers a status update / status publish from the device
+    # This triggers the device to publish its current power status
     topic_publish = f'cmnd/{device}/Power'
     client.publish(topic_publish)
 
+    # Waits for the power status to be received
     result_received.wait(timeout=5)
 
     client.loop_stop()
@@ -83,11 +87,16 @@ def wait(device):
     seconds = int(request.form.get('seconds'))
     if seconds > 60:
         return Response("The device is not allowed to run longer than 60 seconds.", status=400)
-
+    interval = int(request.form.get('interval'))
     callback_url = request.headers.get('Cpee-Callback')
+
     # This starts a separate thread running the mixer, meanwhile a response is instantly returned to the caller.
-    thread = threading.Thread(target=_switch_on_for_duration, args=(device, seconds, callback_url))
-    thread.start()
+    thread_run_device = threading.Thread(target=_switch_on_for_duration, args=(device, seconds, callback_url))
+    thread_run_device.start()
+
+    # This starts a separate thread measuring the mixer's power consumption
+    thread_measure_consumption = threading.Thread(target=_measure_power_consumption, args=(device, seconds, interval))
+    thread_measure_consumption.start()
 
     response = Response(f"Running {device} for {seconds} seconds.")
     response.headers[
@@ -95,12 +104,38 @@ def wait(device):
     return response
 
 
+def _read_power_consumption(client, userdata, message):
+    global consumptions
+    power_data = json.loads(message.payload.decode())
+    consumptions.append(
+        power_data['StatusSNS']['ENERGY']['Power'])  # This gets the value of the current consumption in Watt
+
+
+def _measure_power_consumption(device, runtime, interval):
+    max_counter = round(runtime / interval)
+    client = mqtt_client.Client()
+    client.on_message = _read_power_consumption
+    client.connect(mqtt_broker, mqtt_port)
+
+    # Tasmota devices publish their power consumption on this topic
+    client.subscribe(f'stat/{device}/STATUS8')
+    client.loop_start()
+
+    time.sleep(1.5)  # This is due to an internal delay in the device until power consumption is correctly published
+    for counter in range(max_counter):
+        # This triggers the device to publish its current power consumption
+        client.publish(f'cmnd/{device}/Status', payload=8)
+        counter += 1
+        time.sleep(interval)
+
+
 def _switch_on_for_duration(device, seconds, callback_url=None):
+    global consumptions
     switch_on(device)
     time.sleep(seconds)
     switch_off(device)
     if callback_url:
-        requests.put(callback_url, f"Ran {device} for {seconds} seconds.")
+        requests.put(callback_url, consumptions)
 
 
 if __name__ == '__main__':
