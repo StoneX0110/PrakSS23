@@ -8,7 +8,7 @@ import daemon
 import paho.mqtt.client as mqtt_client
 import paho.mqtt.publish as mqtt_publish
 import requests
-from flask import Flask, Response, request
+from flask import Flask, Response, request, jsonify
 
 app = Flask(__name__)
 
@@ -135,7 +135,7 @@ def _switch_on_for_duration(device, seconds, callback_url=None):
     time.sleep(seconds)
     switch_off(device)
     if callback_url:
-        requests.put(callback_url, consumptions)
+        requests.put(callback_url, jsonify(consumptions))
 
 
 if __name__ == '__main__':
