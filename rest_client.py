@@ -87,7 +87,7 @@ def wait(device):
     seconds = int(request.form.get('seconds'))
     if seconds > 60:
         return Response("The device is not allowed to run longer than 60 seconds.", status=400)
-    interval = int(request.form.get('interval'))
+    interval = float(request.form.get('interval'))
     callback_url = request.headers.get('Cpee-Callback')
 
     # This starts a separate thread running the mixer, meanwhile a response is instantly returned to the caller.
