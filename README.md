@@ -43,7 +43,7 @@ The REST service provides access to the following endpoints:
 - PUT `/<device>/run`: Turns on the device for a specified duration.
   - Requires a JSON body with the following parameters:
       - *seconds* (int), indicating the number of seconds the device should run.
-      The device should not run for more than 60 seconds.  The device should not run for more than 60 seconds.
+      The device should not run for more than 60 seconds.
 - PUT `/<device>/wait`: Turns on the device for a specified duration. Is synchronous, meaning that a CPEE process will wait for the device to complete the run-time before going on with the process.
   Measures power consumption in specified intervals during run-time.
   - Requires a JSON body with the following parameters:
