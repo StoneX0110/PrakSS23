@@ -19,8 +19,7 @@ We then configured the remote switch for the mixer as follows:
 ```
 git clone https://github.com/StoneX0110/PrakSS23
 ```
-2. Move to the installation folder of the project
-3. Install the required dependencies
+2. Install the required dependencies
 ```
 pip install -r requirements.txt
 ```
