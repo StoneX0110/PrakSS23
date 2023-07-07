@@ -1,5 +1,6 @@
 import json
 import time
+import paho.mqtt.client as mqtt_client
 
 _consumptions = []
 
@@ -15,7 +16,7 @@ def _read_power_consumption(client, userdata, message):
         power_data['StatusSNS']['ENERGY']['Power'])  # This gets the value of the current consumption in Watt
 
 
-def measure_power_consumption(mqtt_client, mqtt_broker, mqtt_port, device, runtime, interval):
+def measure_power_consumption(mqtt_broker, mqtt_port, device, runtime, interval):
     global _consumptions
     _consumptions.clear()
 

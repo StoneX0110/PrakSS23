@@ -96,7 +96,7 @@ def wait(device):
 
     # This starts a separate thread measuring the mixer's power consumption
     thread_measure_consumption = threading.Thread(target=power_service.measure_power_consumption,
-                                                  args=(mqtt_client, mqtt_broker, mqtt_port, device, seconds, interval))
+                                                  args=(mqtt_broker, mqtt_port, device, seconds, interval))
     thread_measure_consumption.start()
 
     response = Response(f"Running {device} for {seconds} seconds.")
