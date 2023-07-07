@@ -13,7 +13,7 @@ def _read_power_consumption(client, userdata, message):
     global _consumptions
     power_data = json.loads(message.payload.decode())
     _consumptions.append(
-        power_data['StatusSNS']['ENERGY']['Power'])  # This gets the value of the current consumption in Watt
+        power_data['StatusSNS']['ENERGY']['Power'])  # This gets the current consumption in Watt
 
 
 def measure_power_consumption(mqtt_broker, mqtt_port, device, runtime, interval):
