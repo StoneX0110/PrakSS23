@@ -8,7 +8,9 @@ import daemon
 import paho.mqtt.client as mqtt_client
 import paho.mqtt.publish as mqtt_publish
 import requests
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request
+
+import power_service
 
 app = Flask(__name__)
 
@@ -17,8 +19,6 @@ mqtt_port = 0
 
 result = ""
 result_received = threading.Event()
-
-consumptions = []
 
 
 def _read_switch_state(client, userdata, message):
@@ -90,12 +90,13 @@ def wait(device):
     interval = float(request.form.get('interval'))
     callback_url = request.headers.get('Cpee-Callback')
 
-    # This starts a separate thread running the mixer, meanwhile a response is instantly returned to the caller.
+    # This starts a separate thread running the mixer
     thread_run_device = threading.Thread(target=_switch_on_for_duration, args=(device, seconds, callback_url))
     thread_run_device.start()
 
     # This starts a separate thread measuring the mixer's power consumption
-    thread_measure_consumption = threading.Thread(target=_measure_power_consumption, args=(device, seconds, interval))
+    thread_measure_consumption = threading.Thread(target=power_service.measure_power_consumption,
+                                                  args=(mqtt_client, mqtt_broker, mqtt_port, device, seconds, interval))
     thread_measure_consumption.start()
 
     response = Response(f"Running {device} for {seconds} seconds.")
@@ -104,38 +105,12 @@ def wait(device):
     return response
 
 
-def _read_power_consumption(client, userdata, message):
-    global consumptions
-    power_data = json.loads(message.payload.decode())
-    consumptions.append(
-        power_data['StatusSNS']['ENERGY']['Power'])  # This gets the value of the current consumption in Watt
-
-
-def _measure_power_consumption(device, runtime, interval):
-    max_counter = round(runtime / interval)
-    client = mqtt_client.Client()
-    client.on_message = _read_power_consumption
-    client.connect(mqtt_broker, mqtt_port)
-
-    # Tasmota devices publish their power consumption on this topic
-    client.subscribe(f'stat/{device}/STATUS8')
-    client.loop_start()
-
-    time.sleep(1.5)  # This is due to an internal delay in the device until power consumption is correctly published
-    for counter in range(max_counter):
-        # This triggers the device to publish its current power consumption
-        client.publish(f'cmnd/{device}/Status', payload=8)
-        counter += 1
-        time.sleep(interval)
-
-
 def _switch_on_for_duration(device, seconds, callback_url=None):
-    global consumptions
     switch_on(device)
     time.sleep(seconds)
     switch_off(device)
     if callback_url:
-        requests.put(callback_url, json.dumps(consumptions))
+        requests.put(callback_url, json.dumps(power_service.get_consumptions()))
 
 
 if __name__ == '__main__':
