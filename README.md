@@ -34,7 +34,7 @@ The REST service provides access to the following endpoints:
   - Requires a JSON body with the following parameters:
     - *seconds* (int), indicating the number of seconds the device should run.
     The device should not run for more than 60 seconds.
-    - *interval* (float), indicating the polling interval for the power consumption.
+    - *interval* (float), indicating the polling interval for the power consumption in seconds.
   - The application first returns a response with the header `CPEE-CALLBACK = true`. This tells the CPEE process to wait until a final result is returned to its callback-URL by the application.
   - The final result returned to the callback-URL is a list of the power consumption measurements in Watt.
 
