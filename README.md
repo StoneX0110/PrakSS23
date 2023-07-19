@@ -37,5 +37,6 @@ The REST service provides access to the following endpoints:
     - *interval* (float), indicating the polling interval for the power consumption in seconds.
   - The application first returns a response with the header `CPEE-CALLBACK = true`. This tells the CPEE process to wait until a final result is returned to its callback-URL by the application.
   - The final result returned to the callback-URL is a list of the power consumption measurements in Watt.
+    - The size of the list may vary. This is due to the switch taking about 1.5 seconds until it publishes its consumption correctly (until then it is 0), thus we cut away all leading zeros in the list.
 
 We configured the application to be able to control multiple devices, thus `<device>` represents the name of the remote switch to be accessed, in our case 'mixer'.
