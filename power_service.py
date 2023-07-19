@@ -28,13 +28,11 @@ def measure_power_consumption(mqtt_broker, mqtt_port, device, runtime, interval)
     client.subscribe(f'stat/{device}/STATUS8')
     client.loop_start()
 
-    time.sleep(1.5)
-    # This is due to an internal delay in the remote switch until its power consumption is correctly published.
-    # If we omitted this, the first values in the power consumptions list would always be multiple zeros.
-
     max_counter = round(runtime / interval)
     for counter in range(max_counter):
         # This triggers the device to publish its current power consumption
         client.publish(f'cmnd/{device}/Status', payload=8)
         counter += 1
         time.sleep(interval)
+
+    client.disconnect()

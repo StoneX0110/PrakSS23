@@ -110,7 +110,7 @@ def _switch_on_for_duration(device, seconds, callback_url=None):
     time.sleep(seconds)
     switch_off(device)
     if callback_url:
-        requests.put(callback_url, json.dumps(power_service.get_consumptions()))
+        requests.put(callback_url, json.dumps([x for x in power_service.get_consumptions() if x != 0]))
 
 
 if __name__ == '__main__':
