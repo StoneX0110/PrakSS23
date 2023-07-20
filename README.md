@@ -23,13 +23,13 @@ The application now tells you all the IPs it is accessible at after having start
 ## Functionality
 The REST service provides access to the following endpoints:
 - GET `/<device>/state`: Retrieves the current state of the device (e.g., ON or OFF).
-- PUT `/<device>/on`: Turns on the device.
-- PUT `/<device>/off`: Turns off the device.
-- PUT `/<device>/run`: Turns on the device for a specified duration.
+- PUT `/<device>/on`: Turns the device on.
+- PUT `/<device>/off`: Turns the device off.
+- PUT `/<device>/run`: Turns the device on for a specified duration.
   - Requires a JSON body with the following parameters:
       - *seconds* (int), indicating the number of seconds the device should run.
       The device should not run for more than 60 seconds.
-- PUT `/<device>/wait`: Turns on the device for a specified duration. Is synchronous, meaning that a CPEE process will wait for the device to complete the run-time before going on with the process.
+- PUT `/<device>/wait`: Turns the device on for a specified duration. Is synchronous, meaning that a CPEE process will wait for the device to complete the run-time before going on with the process.
   Measures power consumption in specified intervals during run-time.
   - Requires a JSON body with the following parameters:
     - *seconds* (int), indicating the number of seconds the device should run.
